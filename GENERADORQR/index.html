@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de QR en alta calidad</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffe4ec, #ffe9b3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .tarjeta {
+      background: white;
+      border: 3px solid #ff7b00;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 360px;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #aaa;
+      font-size: 16px;
+    }
+
+    input[type="file"] {
+      margin: 10px 0;
+    }
+
+    button {
+      background-color: #ff7b00;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #e56d00;
+    }
+
+    #qr {
+      margin: 20px auto;
+    }
+
+    #logo-preview {
+      max-width: 100px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    #mensaje {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ff7b00;
+      margin-top: 10px;
+    }
+
+    #descargar {
+      margin-top: 15px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tarjeta">
+    <h2>Genera tu código QR</h2>
+    <input type="text" id="texto" placeholder="Escribe el enlace o texto">
+    <br>
+    <label for="logoInput"><b>Sube tu logo (opcional):</b></label><br>
+    <input type="file" id="logoInput" accept="image/*">
+    <img id="logo-preview" alt="Vista previa del logo">
+    <br>
+    <button onclick="generarQR()">Generar QR</button>
+    <div id="qr"></div>
+    <p id="mensaje">Visita nuestras redes sociales</p>
+    <button id="descargar" onclick="descargarQR()">Descargar QR</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    const logoInput = document.getElementById('logoInput');
+    const logoPreview = document.getElementById('logo-preview');
+    let logoDataURL = null;
+
+    logoInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          logoDataURL = e.target.result;
+          logoPreview.src = logoDataURL;
+          logoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function generarQR() {
+      const texto = document.getElementById('texto').value;
+      const contenedor = document.getElementById('qr');
+      const botonDescarga = document.getElementById('descargar');
+
+      if (!texto) {
+        alert('Por favor escribe un texto o enlace');
+        return;
+      }
+
+      contenedor.innerHTML = '';
+
+      const tamañoQR = 800; // tamaño grande para calidad HD
+      QRCode.toCanvas(document.createElement('canvas'), texto, { 
+        width: tamañoQR,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#ffffff"
+        }
+      }, function (error, qrCanvas) {
+        if (error) console.error(error);
+
+        const finalCanvas = document.createElement('canvas');
+        const ctx = finalCanvas.getContext('2d');
+        const size = tamañoQR;
+        finalCanvas.width = size;
+        finalCanvas.height = size;
+
+        // Pegar el QR base
+        ctx.drawImage(qrCanvas, 0, 0, size, size);
+
+        // Si hay logo, colocarlo centrado
+        if (logoDataURL) {
+          const logo = new Image();
+          logo.src = logoDataURL;
+          logo.onload = () => {
+            const logoSize = size * 0.2; // 20% del tamaño del QR
+            const x = (size - logoSize) / 2;
+            const y = (size - logoSize) / 2;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(x - 10, y - 10, logoSize + 20, logoSize + 20); // fondo blanco del logo
+            ctx.drawImage(logo, x, y, logoSize, logoSize);
+            mostrarQR(finalCanvas);
+          };
+        } else {
+          mostrarQR(finalCanvas);
+        }
+
+        function mostrarQR(canvasFinal) {
+          canvasFinal.style.width = "250px"; // se muestra más pequeño, pero sigue siendo HD
+          contenedor.appendChild(canvasFinal);
+          botonDescarga.style.display = 'inline-block';
+        }
+      });
+    }
+
+    function descargarQR() {
+      const canvas = document.querySelector('#qr canvas');
+      const enlace = document.createElement('a');
+      enlace.href = canvas.toDataURL('image/png', 1.0);
+      enlace.download = 'qr_alta_calidad.png';
+      enlace.click();
+    }
+  </script>
+
+</body>
+</html>
